@@ -81,6 +81,45 @@ number of reasons to change throughout the codebase. And less reasons to change 
 
 The domain code is free to be modelled as best fits the business problems while the persistence and UI code are free to be modelled as best fits the persistence and UI problems.
 
+### Domain Object
+
+The domain object is the core part of the application. It can have both state and behaviour. However, it doesn’t have any outward dependency. So any change in the other layers has no impact on the domain object.
+
+The domain object changes only if there is a change in the business requirement. Hence, this is an example of the Single Responsibility Principle among the SOLID principles of software design.
+
+**Example of domain objects:** Suppose we are building a library application, **Book**, **User** can be a domains of our application. Similarly, in a financial application, **Account** can be a domain object.
+
+Domain object is directly linked to business requirements and it should only be changed when the requirement changes. No other changes should be the reason to change domain object.
+
+### Use Cases
+
+We know use cases as abstract descriptions of what users are doing with our software. In the hexagonal architecture style, it makes sense to promote use cases to first-class citizens of our codebase.
+
+First, let’s discuss what a use case actually does. Usually, it follows these steps:
+
+* Take input
+* Validate business rules
+* Manipulate model state
+* Return output
+
+A use case in this sense is a class that handles everything around, well, a certain use case. As an example let’s consider the use case “Send money from one account to another” in a banking application. We’d create a class SendMoneyUseCase with a distinct API that allows a user to transfer money. The code contains all the business rule validations and logic that are specific to the use case and thus cannot be implemented within the domain objects. Everything else is delegated to the domain objects (there might be a domain object Account, for instance).
+
+Similar to the domain objects, a use case class has no dependency on outward components. When it needs something from outside of the hexagon, we create an output port.
+
+A use case takes input from an incoming adapter. If the business rules were satisfied, the use case then manipulates the state of the model in one way or another, based on the input. Usually, it will change the state of a domain object and pass this new state to a port implemented by the persistence adapter to be persisted. A use case might also call any other outgoing adapter, though.
+
+The last step is to translate the return value from the outgoing adapter into an output object which will be returned to the calling adapter.
+
+While **validating input is not part of the use case logic**, validating business rules definitely is. Business rules are the core of the application and should be handled with appropriate care.
+
+A very pragmatic distinction between the two is that validating a business rule requires access to the current state of the domain model while validating input does not. Input validation can be implemented declaratively, such as `amount` should not be null when sending money, while a business rule needs more context.
+
+We might also say that input validation is a syntactical validation, while a business rule is a semantical validation in the context of a use case.
+
+Let’s take the rule “the source account must not be overdrawn”. By the definition above, this is a business rule since it needs access to the current state of the model to check if the source and target accounts do exist.
+
+In contrast, the rule “the transfer amount must be greater than zero” can be validated without access to the model and thus can be implemented as part of the input validation. **The best way is to do put the business rules into a domain entity.**
+
 ### File Structure
 
 ```
