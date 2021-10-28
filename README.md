@@ -116,9 +116,9 @@ A very pragmatic distinction between the two is that validating a business rule 
 
 We might also say that input validation is a syntactical validation, while a business rule is a semantical validation in the context of a use case.
 
-Let’s take the rule “the source account must not be overdrawn”. By the definition above, this is a business rule since it needs access to the current state of the model to check if the source and target accounts do exist.
+Let’s take the rule “the source account must not be overdrawn”. By the definition above, this is a business rule since it needs access to the current state of the model to check if the source and target accounts do exist. **The best way is to do put the business rules into a domain entity.**
 
-In contrast, the rule “the transfer amount must be greater than zero” can be validated without access to the model and thus can be implemented as part of the input validation. **The best way is to do put the business rules into a domain entity.**
+In contrast, the rule “the transfer amount must be greater than zero” can be validated without access to the model and thus can be implemented as part of the input validation (**this type of validations should be put inside the implementation of input port for use case**).
 
 ### File Structure
 
