@@ -120,6 +120,23 @@ Let’s take the rule “the source account must not be overdrawn”. By the def
 
 In contrast, the rule “the transfer amount must be greater than zero” can be validated without access to the model and thus can be implemented as part of the input validation (**this type of validations should be put inside the implementation of input port for use case**).
 
+### Ports
+The ports are interfaces that allow inbound and outbound flow. Therefore, the core part of the application communicates with the outside part using the dedicated ports.
+
+The domain objects and use cases are within the hexagon, i.e. within the core of the application. Every communication to and from the outside happens through dedicated “ports”.
+
+#### Input Ports (Inbound Ports)
+
+The inbound port exposes the core application to the outside. It is an interface that can be called by the outside components. These outside components calling an inbound port are called primary or input adapters.
+
+**Examples:** In a banking application, examples of input port inside account service (implemented by account use case) are: get account by ID, add account, remove account.
+
+#### Output Ports (Outbound Ports)
+
+The outbound port allows outside functionality to the core application. It is an interface that enables the use case of the core application to communicate with the outside such as database access. Hence, the outbound port is implemented by the outside components which are called secondary or output adapters.
+
+**Examples:** In a banking application, a simple example of output port is that which fetches account from database by ID provided from input port. Another example is that which adds a new account in database with details provided by input port.
+
 ### File Structure
 
 ```
