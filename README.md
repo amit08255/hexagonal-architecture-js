@@ -91,6 +91,83 @@ The domain object changes only if there is a change in the business requirement.
 
 Domain object is directly linked to business requirements and it should only be changed when the requirement changes. No other changes should be the reason to change domain object.
 
+```java
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+public class Account {
+
+  @Getter private final AccountId id;
+
+  @Getter private final Money baselineBalance;
+
+  @Getter private final ActivityWindow activityWindow;
+
+  public static Account account(
+          AccountId accountId,
+          Money baselineBalance,
+          ActivityWindow activityWindow) {
+    return new Account(accountId, baselineBalance, activityWindow);
+  }
+
+  public Optional<AccountId> getId(){
+    return Optional.ofNullable(this.id);
+  }
+
+  public Money calculateBalance() {
+    return Money.add(
+        this.baselineBalance,
+        this.activityWindow.calculateBalance(this.id));
+  }
+
+  public boolean withdraw(Money money, AccountId targetAccountId) {
+
+    if (!mayWithdraw(money)) {
+      return false;
+    }
+
+    Activity withdrawal = new Activity(
+        this.id,
+        this.id,
+        targetAccountId,
+        LocalDateTime.now(),
+        money);
+    this.activityWindow.addActivity(withdrawal);
+    return true;
+  }
+
+  private boolean mayWithdraw(Money money) {
+    return Money.add(
+        this.calculateBalance(),
+        money.negate())
+        .isPositiveOrZero();
+  }
+
+  public boolean deposit(Money money, AccountId sourceAccountId) {
+    Activity deposit = new Activity(
+        this.id,
+        sourceAccountId,
+        this.id,
+        LocalDateTime.now(),
+        money);
+    this.activityWindow.addActivity(deposit);
+    return true;
+  }
+
+  @Value
+  public static class AccountId {
+    private Long value;
+  }
+
+}
+```
+
+An Account can have many associated Activitys that each represents a withdrawal or a deposit to that account. Since we don’t always want to load all activities for a given account, we limit it to a certain ActivityWindow. To still be able to calculate the total balance of the account, the Account class has the baselineBalance attribute containing the balance of the account at the start time of the activity window.
+
+As you can see in the code above, we build our domain objects completely free of dependencies to the other layers of our architecture. We’re free to model the code how we see fit, in this case creating a “rich” behavior that is very close to the state of the model to make it easier to understand.
+
+We can use external libraries in our domain model if we choose to, but those dependencies should be relatively stable to prevent forced changes to our code. In the case above, we included Lombok annotations, for instance.
+
+The Account class now allows us to withdraw and deposit money to a single account, but we want to transfer money between two accounts. So, we create a use case class that orchestrates this for us.
+
 ### Use Cases
 
 We know use cases as abstract descriptions of what users are doing with our software. In the hexagonal architecture style, it makes sense to promote use cases to first-class citizens of our codebase.
@@ -131,11 +208,227 @@ The inbound port exposes the core application to the outside. It is an interface
 
 **Examples:** In a banking application, examples of input port inside account service (implemented by account use case) are: get account by ID, add account, remove account.
 
+```java
+public interface SendMoneyUseCase {
+
+  boolean sendMoney(SendMoneyCommand command);
+
+  @Value
+  @EqualsAndHashCode(callSuper = false)
+  class SendMoneyCommand extends SelfValidating<SendMoneyCommand> {
+
+    @NotNull
+    private final AccountId sourceAccountId;
+
+    @NotNull
+    private final AccountId targetAccountId;
+
+    @NotNull
+    private final Money money;
+
+    public SendMoneyCommand(
+        AccountId sourceAccountId,
+        AccountId targetAccountId,
+        Money money) {
+      this.sourceAccountId = sourceAccountId;
+      this.targetAccountId = targetAccountId;
+      this.money = money;
+      this.validateSelf();
+    }
+  }
+
+}
+```
+
+By calling sendMoney(), an adapter outside of our application core can now invoke this use case.
+
+We aggregated all the parameters we need into the SendMoneyCommand value object. This allows us to do the input validation in the constructor of the value object. In the example above we even used the Bean Validation annotation @NotNull, which is validated in the validateSelf() method. This way the actual use case code is not polluted with noisy validation code.
+
+Now we need an implementation of this interface.
+
 #### Output Ports (Outbound Ports)
 
 The outbound port allows outside functionality to the core application. It is an interface that enables the use case of the core application to communicate with the outside such as database access. Hence, the outbound port is implemented by the outside components which are called secondary or output adapters.
 
 **Examples:** In a banking application, a simple example of output port is that which fetches account from database by ID provided from input port. Another example is that which adds a new account in database with details provided by input port.
+
+```java
+@RequiredArgsConstructor
+@Component
+@Transactional
+public class SendMoneyService implements SendMoneyUseCase {
+
+  private final LoadAccountPort loadAccountPort;
+  private final AccountLock accountLock;
+  private final UpdateAccountStatePort updateAccountStatePort;
+
+  @Override
+  public boolean sendMoney(SendMoneyCommand command) {
+
+    LocalDateTime baselineDate = LocalDateTime.now().minusDays(10);
+
+    Account sourceAccount = loadAccountPort.loadAccount(
+        command.getSourceAccountId(),
+        baselineDate);
+
+    Account targetAccount = loadAccountPort.loadAccount(
+        command.getTargetAccountId(),
+        baselineDate);
+
+    accountLock.lockAccount(sourceAccountId);
+    if (!sourceAccount.withdraw(command.getMoney(), targetAccountId)) {
+      accountLock.releaseAccount(sourceAccountId);
+      return false;
+    }
+
+    accountLock.lockAccount(targetAccountId);
+    if (!targetAccount.deposit(command.getMoney(), sourceAccountId)) {
+      accountLock.releaseAccount(sourceAccountId);
+      accountLock.releaseAccount(targetAccountId);
+      return false;
+    }
+
+    updateAccountStatePort.updateActivities(sourceAccount);
+    updateAccountStatePort.updateActivities(targetAccount);
+
+    accountLock.releaseAccount(sourceAccountId);
+    accountLock.releaseAccount(targetAccountId);
+    return true;
+  }
+
+}
+```
+
+Basically, the use case implementation loads the source and target account from the database, locks the accounts so that no other transactions can take place at the same time, makes the withdrawal and deposit, and finally writes the new state of the accounts back to the database.
+
+Also, by using @Component, we make this service a Spring bean to be injected into any components that need access to the SendMoneyUseCase input port without having a dependency on the actual implementation.
+
+For loading and storing the accounts from and to the database, the implementation depends on the output ports LoadAccountPort and UpdateAccountStatePort, which are interfaces that we will later implement within our persistence adapter.
+
+The shape of the output port interfaces is dictated by the use case. While writing the use case we may find that we need to load certain data from the database, so we create an output port interface for it. Those ports may be re-used in other use cases, of course. In our case, the output ports look like this:
+
+```java
+public interface LoadAccountPort {
+
+  Account loadAccount(AccountId accountId, LocalDateTime baselineDate);
+
+}
+```
+
+```java
+public interface UpdateAccountStatePort {
+
+  void updateActivities(Account account);
+
+}
+```
+
+### Adapters
+
+The adapters form the outer layer of the hexagonal architecture. They are not part of the core but interact with it. They interact with the core application only by using the inbound and outbound ports.
+
+#### Primary Adapters (Input Adapters)
+
+The Primary adapters are also known as input or driving adapters. Input adapters or “driving” adapters call the input ports to get something done. An input adapter could be a web interface, for instance. When a user clicks a button in a browser, the web adapter calls a certain input port to call the corresponding use case.
+
+**Examples:**
+
+```java
+@RestController
+@RequiredArgsConstructor
+public class SendMoneyController {
+
+  private final SendMoneyUseCase sendMoneyUseCase;
+
+  @PostMapping(path = "/accounts/send/{sourceAccountId}/{targetAccountId}/{amount}")
+  void sendMoney(
+      @PathVariable("sourceAccountId") Long sourceAccountId,
+      @PathVariable("targetAccountId") Long targetAccountId,
+      @PathVariable("amount") Long amount) {
+
+    SendMoneyCommand command = new SendMoneyCommand(
+        new AccountId(sourceAccountId),
+        new AccountId(targetAccountId),
+        Money.of(amount));
+
+    sendMoneyUseCase.sendMoney(command);
+  }
+
+}
+```
+
+#### Secondary Adapters (Output Adapters)
+
+The Secondary adapters are also known as output or driven adapters. These are implementations of the outbound port interface.
+
+Output adapters or “driven” adapters are called by our use cases and might, for instance, provide data from a database. An output adapter implements a set of output port interfaces. Note that the interfaces are dictated by the use cases and not the other way around.
+
+The adapters make it easy to exchange a certain layer of the application. If the application should be usable from a fat client additionally to the web, we add a fat client input adapter. If the application needs a different database, we add a new persistence adapter implementing the same output port interfaces as the old one.
+
+**Examples:**
+
+```java
+@RequiredArgsConstructor
+@Component
+class AccountPersistenceAdapter implements
+    LoadAccountPort,
+    UpdateAccountStatePort {
+
+  private final AccountRepository accountRepository;
+  private final ActivityRepository activityRepository;
+  private final AccountMapper accountMapper;
+
+  @Override
+  public Account loadAccount(
+          AccountId accountId,
+          LocalDateTime baselineDate) {
+
+    AccountJpaEntity account =
+        accountRepository.findById(accountId.getValue())
+            .orElseThrow(EntityNotFoundException::new);
+
+    List<ActivityJpaEntity> activities =
+        activityRepository.findByOwnerSince(
+            accountId.getValue(),
+            baselineDate);
+
+    Long withdrawalBalance = orZero(activityRepository
+        .getWithdrawalBalanceUntil(
+            accountId.getValue(),
+            baselineDate));
+
+    Long depositBalance = orZero(activityRepository
+        .getDepositBalanceUntil(
+            accountId.getValue(),
+            baselineDate));
+
+    return accountMapper.mapToDomainEntity(
+        account,
+        activities,
+        withdrawalBalance,
+        depositBalance);
+
+  }
+
+  private Long orZero(Long value){
+    return value == null ? 0L : value;
+  }
+
+  @Override
+  public void updateActivities(Account account) {
+    for (Activity activity : account.getActivityWindow().getActivities()) {
+      if (activity.getId() == null) {
+        activityRepository.save(accountMapper.mapToJpaEntity(activity));
+      }
+    }
+  }
+
+}
+```
+
+The adapter implements the loadAccount() and updateActivities() methods required by the implemented output ports. It uses Spring Data repositories to load data from and save data to the database and an AccountMapper to map Account domain objects into AccountJpaEntity objects which represent an account within the database.
+
+Again, we use @Component to make this a Spring bean that can be injected into the use case service above.
 
 ### File Structure
 
