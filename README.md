@@ -65,8 +65,21 @@
 The term “Hexagonal Architecture” stems from Alistair Cockburn and has been around for quite some time14. It applies the same principles that Robert C. Martin later described in more general terms in his Clean Architecture.
 
 <div align="center">
-	<a href=""><img src="./.docs/diag.png" alt="Markdownify" /></a>
+	<a href=""><img src="./.docs/diag.png" alt="Diagram" /></a>
 </div>
+
+Within the hexagon, we find our domain entities and the use cases that work with them. Note that the hexagon has no outgoing dependencies, so that the Dependency Rule from Martin’s Clean Architecture holds true. Instead, all dependencies point towards the center.
+
+Outside of the hexagon, we find various adapters that interact with the application. There might be a web adapter that interacts with a web browser, some adapters interacting with external systems and an adapter that interacts with a database.
+
+**The adapters on the left side are adapters that drive our application (because they call our application core) while the adapters on the right side are driven by our application (because they are called by our application core).**
+
+**To allow communication between the application core and the adapters, the application core provides specific ports.** For driving adapters, such a port might be an interface that is implemented by one of the use case classes in the core and called by the adapter. For a driven adapter, it might be an interface that is implemented by the adapter and called by the core.
+
+The domain code has no dependencies to the outside so we can decouple our domain logic from all those persistence and UI specific problems and reduce the
+number of reasons to change throughout the codebase. And less reasons to change means better maintainability.
+
+The domain code is free to be modelled as best fits the business problems while the persistence and UI code are free to be modelled as best fits the persistence and UI problems.
 
 ### File Structure
 
