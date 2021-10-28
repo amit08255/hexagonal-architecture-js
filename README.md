@@ -64,6 +64,10 @@
 ### Introduction
 The term “Hexagonal Architecture” stems from Alistair Cockburn and has been around for quite some time14. It applies the same principles that Robert C. Martin later described in more general terms in his Clean Architecture.
 
+<div align="center">
+	<a href=""><img src="./.docs/diag.png" alt="Markdownify" /></a>
+</div>
+
 ### File Structure
 
 ```
