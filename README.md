@@ -439,7 +439,6 @@ src/
  ├──book/                  * Book domain folder to contain book usecases
  │   │──add/               * Add book usercase folder
  |   |   │──ports/         * Contains both input/output port codes
- |   |   ├──adapters/      * Contains both input/output adapter codes
  |   |   └──index.js       * Contains add book usercase code
  │   │
  │──components/            * Contains all UI components
