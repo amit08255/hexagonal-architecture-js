@@ -432,34 +432,22 @@ Again, we use @Component to make this a Spring bean that can be injected into th
 
 ### File Structure
 
+All usecase codes will be in separate folder of it's domain. Such as for library app, example of a domain is: book and usecase example is add book.
+
 ```
 src/
- ├──app/                   * WebApp: folder, our source files that will be compiled to javascript
- │   │--shared/            * Do put all shared files within a component feature in a shared folder.
- |   |   |-- exception.service.ts
- |   |   |-- exception.service.spec.ts
- |   |   |-- shared.module.ts * shared module with all shared declarations and providers
- |   |   |-- index.ts             * barrel file
- │   |--app.module.ts      * angular module
- │   |--app.component.ts   * root component
- │   │──app.spec.ts        * a simple test of components in app.ts
- │   │──index.ts           * barrel file
+ ├──book/                  * Book domain folder to contain book usecases
+ │   │──add/               * Add book usercase folder
+ |   |   │──ports/         * Contains both input/output port codes
+ |   |   ├──adapters/      * Contains both input/output adapter codes
+ |   |   └──index.js       * Contains add book usercase code
  │   │
- │──assets/                * static assets are served here
- │   ├──icon/              * our list of icons from www.favicon-generator.org
- │   ├──images/            * our custom app images
- │   ├──service-worker.js  * ignore this. Web App service worker that's not complete yet
- │   ├──robots.txt         * for search engines to crawl your website
- │   └──human.txt          * for humans to know who the developers are
- |──main.ts        * our entry file for our browser environment
- │
- |──index.html     * Index.html: where we generate our index page
- │
- |──polyfills.ts   * our polyfills file
- │
- |──vendor.ts      * our vendor file
+ │──components/            * Contains all UI components
+ │──containers/            * Contains all container components to build app combining multiple components
+ │──services/              * Contain services which use domain ports and adapters to provide a service such as database connection for output adapter
+ |──index.js               * Our entry file for app
  |
- └──globals.d.ts   * our custom global type definitions
+ └──package.json           * All packages and dependencies addition
 ```
 
 ### Testing Setup
