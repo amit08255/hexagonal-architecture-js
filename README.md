@@ -450,15 +450,64 @@ src/
  └──package.json           * All packages and dependencies addition
 ```
 
-### Testing Setup
-All tests are also written in ES6. We use Webpack to take care of the logistics of getting those files to run in the various browsers, just like with our client files. This is our testing stack:
-* Karma
-* Webpack + Babel
-* Mocha
-* Chai
+[![-----------------------------------------------------][colored-line]](#installation)
 
-To run tests, type `npm test` in the terminal. Read more about testing [below](#testing).
+## ➤ Example
 
+Suppose we are designing a library app. Here is how we will setup usecases, ports and adapters:
+
+### src/book/add/index.js
+
+```js
+const addBookUseCase = (ports) => ({
+    addNewBook(name, author, ISBN) {
+        const book = ports.findBook(ISBN);
+        if (book) {
+            return ports.onBookAdded(null, 'Book aleady exists. Failed to add book.');
+        }
+        const response = ports.addBook(name, author, ISBN);
+
+        if (response) {
+            return ports.onBookAdded(response);
+        }
+        return ports.onBookAdded(null, 'Book addition failed.');
+    },
+});
+
+module.exports = { addBookUseCase };
+```
+
+### src/book/add/ports/in.js
+
+```js
+const addBookInputPort = (useCase, bus) => {
+    bus.on('add-book', (name, author, ISBN) => {
+        useCase.addNewBook(name, author, ISBN);
+    });
+};
+
+module.exports = { addBookInputPort };
+```
+
+### src/book/add/ports/out.js
+
+```js
+const addBookOutputPort = (bus, adapters) => ({
+    findBook(ISBN) {
+        return adapters.findBook(ISBN);
+    },
+    addBook(name, author, ISBN) {
+        return adapters.addBook(name, author, ISBN);
+    },
+    onBookAdded(response, message) {
+        return bus.emit('book-added', response, message);
+    },
+});
+
+module.exports = { addBookOutputPort };
+```
+
+### Dependencies
 
 [![-----------------------------------------------------][colored-line]](#installation)
 
