@@ -570,9 +570,6 @@ const AddBookPage = () => {
 module.exports = AddBookPage;
 ```
 
-
-### Dependencies
-
 [![-----------------------------------------------------][colored-line]](#installation)
 
 ## ➤ Getting Started
