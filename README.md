@@ -510,11 +510,29 @@ module.exports = addBookOutputPort;
 ### src/services/book/add/index.js
 
 ```js
-const axios = require('axios');
-
-const addNewBook = (name, author, isbn) => axios.post('/add-book', { name, author, isbn });
+const addNewBook = (request) => (name, author, isbn) => {
+    const req = request.addBook({ name, author, isbn });
+    return req.response.data;
+};
 
 module.exports = addNewBook;
+```
+
+### src/services/book/index.js
+
+```js
+const axios = require('axios');
+
+const bookRepository = {
+    addBook({ name, author, isbn }){
+        return axios.post('/add-book', { name, author, isbn });
+    },
+    findBook(isbn){
+        return axios.get(`/book/${isbn}`);
+    }
+};
+
+module.exports = bookRepository;
 ```
 
 ### src/containers/AddBook/index.jsx
@@ -550,6 +568,7 @@ module.exports = AddBook;
 const React = require('react');
 const events = require('nanoevents');
 const AddBook = require('containers/AddBook');
+const bookRepository = require('services/book');
 const addBook = require('services/book/add');
 const findBook = require('services/book/find');
 const addBookUseCase = require('book/add');
@@ -558,7 +577,7 @@ const addBookOutputPort = require('book/add/ports/out');
 
 const AddBookPage = () => {
     const bus = events.createNanoEvents();
-    const outputPort = addBookOutputPort(bus, { addBook, findBook });
+    const outputPort = addBookOutputPort(bus, { addBook: addBook(bookRepository), findBook: findBook(bookRepository) });
     const useCase = addBookUseCase(outputPort);
     addBookInputPort(useCase, bus);
 
