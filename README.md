@@ -571,7 +571,7 @@ Above example is simple example of hexagonal architecture in JavaScript with Rea
 
 * Every page will contain a container component which is responsible for building entire page layout by combining multiple components.
 
-* Container component and it's children will only communicate with use case by emitting event through event bus. The event bus should be provided as props.
+* Container component and it's children will only communicate with use case by emitting event through event bus (which are use case input ports). The event bus should be provided as props. The use case and communicate through output port which emits event to pass message back to container component. It makes input port, UI components, output port and use cases separate from each other.
 
 * Do not use single global event bus. Instead use event bus which can be shared to use cases so that all events required to a specific part of application is under same bus and prevent conflict with event from other use cases.
 
