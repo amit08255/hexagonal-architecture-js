@@ -579,7 +579,7 @@ Above example is simple example of hexagonal architecture in JavaScript with Rea
 
 * Services act as output adapters which are responsible for allowing use cases to communicate to outside services such as database, REST APIs.
 
-* All services should be independent of medium used for adding/retrieving data. Services should use repository for this purpose.
+* All services should be independent of medium used for adding/retrieving data. Services should use repository for this purpose. In above example services use a technique called *currying* to accept repository as parameter of first function and then return service function used by output port.
 
 * Repositories act as way to communicate with medium for adding/retrieving data such as database connection, REST APIs etc.
 
