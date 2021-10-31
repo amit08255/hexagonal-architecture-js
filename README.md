@@ -510,8 +510,8 @@ module.exports = addBookOutputPort;
 ### src/services/book/add/index.js
 
 ```js
-const addNewBook = (request) => (name, author, isbn) => {
-    const req = request.addBook({ name, author, isbn });
+const addNewBook = (repository) => (name, author, isbn) => {
+    const req = repository.addBook({ name, author, isbn });
     return req.response.data;
 };
 
