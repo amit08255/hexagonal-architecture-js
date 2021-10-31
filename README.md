@@ -15,40 +15,16 @@
 
 ## ➤ Table of Contents
 
-* [➤ Introduction](#-introduction)
-* [➤ Getting Started (quick)](#-getting-started-quick)
-* [➤ Getting Started (slower)](#-getting-started-slower)
-	* [Blueprint](#blueprint)
-	* [Usage](#usage)
-	* [Configuration](#configuration)
-* [➤ Templates](#-templates)
-	* [Title](#title)
-	* [Logo](#logo)
-	* [Badges](#badges)
-	* [Description](#description)
-	* [Table of Contents](#table-of-contents)
-	* [Contributors](#contributors)
-* [➤ Contributors](#-contributors)
-	* [License](#license)
-* [➤ License](#-license)
-* [➤ Load markdown files](#-load-markdown-files)
-* [➤ Automatic documentation](#-automatic-documentation)
-	* [my-button](#my-button)
-		* [Properties](#properties)
-		* [Slots](#slots)
-* [➤ A bit about this readme](#-a-bit-about-this-readme)
-* [➤ Custom templates](#-custom-templates)
-* [➤ Advanced!](#-advanced)
-	* [Check broken links](#check-broken-links)
-	* [New template syntax](#new-template-syntax)
-	* [Variables](#variables)
-		* [Objects](#objects)
-		* [1D Arrays](#1d-arrays)
-		* [2D Arrays](#2d-arrays)
-	* [Different colored lines](#different-colored-lines)
-	* [Different formatted headings](#different-formatted-headings)
-* [➤ Featured README's](#-featured-readmes)
-* [➤ Future work](#-future-work)
+* [➤ Walkthrough](#-walkthrough)
+	* [Built With](#built-with)
+	* [Introduction](#introduction)
+	* [Domain Object](#domain-object)
+	* [Use Cases](#use-cases)
+	* [Ports](#ports)
+	* [Adapters](#adapters)
+	* [File Structure](#file-structure)
+* [➤ Example](#-example)
+* [➤ Getting Started](#-getting-started)
 </details>
 
 [![-----------------------------------------------------][colored-line]](#installation)
@@ -588,6 +564,28 @@ const AddBookPage = () => {
 
 module.exports = AddBookPage;
 ```
+
+Above example is simple example of hexagonal architecture in JavaScript with ReactJS.
+
+* Think of every page as entry of separate app. This page will include all use cases used on the page and initialize them together.
+
+* Every page will contain a container component which is responsible for building entire page layout by combining multiple components.
+
+* Container component and it's children will only communicate with use case by emitting event through event bus. The event bus should be provided as props.
+
+* Do not use single global event bus. Instead use event bus which can be shared to use cases so that all events required to a specific part of application is under same bus and prevent conflict with event from other use cases.
+
+* Input port (created as bus event handler) is used by UI components (which are input adapters). Use cases use output port directly and output port is responsible to communicate with outer world through output adapters (which are services). Use cases should not emit event and should only communicate to outer world through output port. Output ports can emit event to inform about status of action taken by input adapters through input ports. Such as add book UI can only use add book input port and use case can only use add book output port and once book is added, use case will use notify add book output port which then will emit event to inform about completion of the action.
+
+* Services act as output adapters which are responsible for allowing use cases to communicate to outside services such as database, REST APIs.
+
+* All services should be independent of medium used for adding/retrieving data. Services should use repository for this purpose.
+
+* Repositories act as way to communicate with medium for adding/retrieving data such as database connection, REST APIs etc.
+
+* Separating repositories and services allows to use same service in different type of medium without changing code as long as both have same interfaces.
+
+* Using event bus as communication channel makes input adapters, use cases and output adapters completely separate from each other. [Nanoevents](https://github.com/ai/nanoevents) is a great example for simple event bus.
 
 [![-----------------------------------------------------][colored-line]](#installation)
 
