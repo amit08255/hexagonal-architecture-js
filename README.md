@@ -421,6 +421,7 @@ src/
  │──containers/            * Contains all container components to build app combining multiple components
  │──pages/                 * Contains all page files
  │──services/              * Contain services which acts like output adapters use domain ports to provide a service such as database connection
+ │──use-classes/           * Contain use-classes which initiates everything for specific use cases along with input/output ports and input/output adapters
  |──index.js               * Our entry file for app
  |
  └──package.json           * All packages and dependencies addition
@@ -437,6 +438,8 @@ src/
 * **Ports and events:** Communication to and from use cases are done using port events. To communicate with use cases, app components emits an event which is captured by event handler inside input port. The data retrieved by input port event handler, is transferred to specific use case function. Once processing and retrieving data, use cases communicate through output port. Output port emits event that can be captured by even handlers in our app components.
 
 * **Output adapter and repository:** When data is required from external sources, use cases need output port. Output port uses output adapters which are used to retrieve and process data from external sources. Output adapter uses repository to fetch data, when data is provided from repository, it then should be processed by output adapter to convert into format expected by use case.
+
+* **Use classes:** We can include use-classes which are nothing just a function which initializes everything for specific use cases along with input/output ports and input/output adapters. The main advantage of using use classes are better code reusability. These are just simple functions which setup a use case with ports and adapters. Instead of duplicating same code to setup these things, using use-classes are great solution. The use-class function accepts an optional single argument which is event bus object. When provided, the use case ports are setup to make use of the provided ports. If the even bus is not provided, new one is created to be used by use case. The use-class function returns event bus being used by the use class ports.
 
 
 [![-----------------------------------------------------][colored-line]](#installation)
