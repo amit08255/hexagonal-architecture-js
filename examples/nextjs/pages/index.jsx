@@ -1,10 +1,5 @@
 import React from 'react';
-import { getBookUseCase } from '../book/get';
-import { getBookInputPort } from '../book/get/ports/in';
-import { getBookOutputPort } from '../book/get/ports/out';
-import { createNanoEvents } from '../nanoevents';
-import { bookRepository } from '../services/book';
-import { getBookList } from '../services/book/get';
+import { getBookUseClass } from '../use-classes/book/add';
 
 const Page = ({ books }) => {
     console.log(books);
@@ -24,10 +19,7 @@ const Page = ({ books }) => {
 
 // This gets called on every request
 export async function getServerSideProps() {
-    const bus = createNanoEvents();
-    const outputPort = getBookOutputPort(bus, { getBookList: getBookList(bookRepository) });
-    const useCase = getBookUseCase(outputPort);
-    getBookInputPort(useCase, bus);
+    const bus = getBookUseClass();
     const books = await bus.emitAsync('get-books', 'books-received');
     return { props: { books } };
 }
