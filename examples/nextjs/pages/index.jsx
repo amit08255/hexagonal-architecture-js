@@ -20,7 +20,7 @@ const Page = ({ books }) => {
 // This gets called on every request
 export async function getServerSideProps() {
     const bus = getBookUseClass();
-    const books = await bus.emitAsync('get-books', 'books-received');
+    const [books] = await bus.emitAsync('get-books', 'books-received');
     return { props: { books } };
 }
 

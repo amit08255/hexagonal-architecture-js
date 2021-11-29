@@ -5,7 +5,7 @@ export const createNanoEvents = () => ({
         (this.events[event] || []).forEach((i) => i(...args));
 
         if (this.promises[event]) {
-            this.promises[event](...args);
+            this.promises[event](args);
             delete this.promises[event];
         }
     },
